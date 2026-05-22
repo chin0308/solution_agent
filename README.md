@@ -81,7 +81,8 @@ Frontend Visualization
 PROJECT STRUCTURE
 --------------------------------------------------
 
-'''solution-agent/
+```
+solution-agent/
 │
 ├── backend/
 │   ├── app/
@@ -102,7 +103,7 @@ PROJECT STRUCTURE
 │   └── vite.config.js
 │
 └── README.md
-'''
+```
 
 
 --------------------------------------------------
