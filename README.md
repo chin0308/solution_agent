@@ -58,6 +58,7 @@ CORE FEATURES
 SYSTEM WORKFLOW
 --------------------------------------------------
 
+```
 Frontend Dashboard
         ↓
 Requirement Input / Document Upload
@@ -75,6 +76,7 @@ PostgreSQL Persistence
 Structured API Response
         ↓
 Frontend Visualization
+```
 
 
 --------------------------------------------------
