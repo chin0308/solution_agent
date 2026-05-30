@@ -41,21 +41,21 @@ TASK:
 Analyze these requirements and generate a detailed architecture recommendation.
 
 RESPONSE FORMAT (MUST be valid JSON, no markdown):
-{{
-    "style": "one of: Monolith, Modular Monolith, Event-Driven Microservices, Event-Driven Streaming Architecture",
+{
+    "architecture_style": "one of: Monolith, Modular Monolith, Event-Driven Microservices, Event-Driven Streaming Architecture",
     "confidence": number between 0-100,
     "reasoning": "detailed explanation of why this architecture is recommended",
     "key_signals_detected": [list of detected requirement signals like "real-time", "scalability", "event-driven", "compliance"],
     "recommended_patterns": [list of architecture patterns],
     "risk_considerations": [list of potential risks and mitigation strategies],
     "scalability_strategy": "how the system scales",
-    "technology_recommendations": {{
+    "technology_recommendations": {
         "message_broker": "Kafka or RabbitMQ or Redis",
         "database": "PostgreSQL or MongoDB or DynamoDB",
         "cache": "Redis or Memcached",
         "api_gateway": "Kong or Nginx or API Gateway"
-    }}
-}}
+    }
+}
 
 IMPORTANT:
 1. Return ONLY valid JSON, no markdown formatting
@@ -92,19 +92,19 @@ TASK:
 Generate specific microservices/components for this architecture.
 
 RESPONSE FORMAT (MUST be valid JSON):
-{{
+{
     "services": [
-        {{
+        {
             "name": "Service Name",
             "description": "What it does",
             "responsibilities": ["list", "of", "responsibilities"],
             "technology_stack": ["recommended", "technologies"],
             "scalability": "how it scales"
-        }}
+        }
     ],
     "service_communication": "how services communicate (async/sync/event-driven)",
     "data_isolation_strategy": "how data is isolated between services"
-}}
+}
 
 IMPORTANT:
 1. Return ONLY valid JSON

@@ -71,12 +71,14 @@ app = FastAPI(
 
 @app.on_event("startup")
 def startup_event():
-    """Initialize database on startup."""
+    """Log active database URL on startup."""
     try:
-        init_db()
-        print("Database initialized on startup")
+        from app.db.database import _masked_database_url
+
+        active_url = _masked_database_url()
+        print(f"Active database URL on startup: {active_url}")
     except Exception as e:
-        print(f"Database initialization warning: {e}")
+        print(f"Database startup warning: {e}")
 
 # =============================================================================
 # CORS CONFIGURATION
@@ -388,6 +390,13 @@ async def startup_event():
         f"Version: {settings.APP_VERSION}"
     )
 
+    try:
+        from app.db.database import _masked_database_url
+
+        print(f"Active database URL: {_masked_database_url()}")
+    except Exception as e:
+        print(f"⚠ Could not determine active database URL: {e}")
+
     if settings.GEMINI_API_KEY:
         print("✓ GEMINI API configured")
 
@@ -399,7 +408,7 @@ async def startup_event():
     # Initialize database
     try:
         init_db()
-        print("✓ PostgreSQL database initialized")
+        print("✓ Database initialized without dropping existing data")
     except Exception as e:
         print(f"⚠ Database initialization warning: {e}")
 

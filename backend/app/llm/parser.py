@@ -75,23 +75,28 @@ class GeminiResponseParser:
         Returns:
             True if valid, False otherwise
         """
-        required_fields = {
-            "architecture_style": str,
-            "confidence": (int, float),
-            "reasoning": str,
-        }
+        # Accept either `architecture_style` or legacy `style` key for backwards compatibility
+        if "architecture_style" in data:
+            style_key = "architecture_style"
+        elif "style" in data:
+            style_key = "style"
+        else:
+            logger.warning("Missing required field: architecture_style or style")
+            return False
 
-        for field, expected_type in required_fields.items():
-            if field not in data:
-                logger.warning(f"Missing required field: {field}")
-                return False
+        # Validate types
+        if not isinstance(data.get(style_key, ""), str):
+            logger.warning(f"Field {style_key} has wrong type: expected str")
+            return False
 
-            if not isinstance(data[field], expected_type):
-                logger.warning(
-                    f"Field {field} has wrong type: expected {expected_type}, "
-                    f"got {type(data[field])}"
-                )
-                return False
+        confidence = data.get("confidence")
+        if not isinstance(confidence, (int, float)):
+            logger.warning("Field confidence missing or wrong type")
+            return False
+
+        if not isinstance(data.get("reasoning", ""), str):
+            logger.warning("Field reasoning missing or wrong type")
+            return False
 
         # Validate confidence is in valid range
         confidence = data.get("confidence", 0)
@@ -111,8 +116,12 @@ class GeminiResponseParser:
         Returns:
             Normalized architecture dict
         """
+        # Support both `architecture_style` and legacy `style` keys; normalize to both `style` and `architecture_style`
+        arch_style = response.get("architecture_style") or response.get("style") or "Modular Monolith"
+
         return {
-            "style": response.get("architecture_style", "Modular Monolith"),
+            "style": arch_style,
+            "architecture_style": arch_style,
             "confidence": int(response.get("confidence", 80)),
             "reasoning": response.get("reasoning", ""),
             "key_signals": response.get("key_signals_detected", []),

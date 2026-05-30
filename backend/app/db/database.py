@@ -17,7 +17,14 @@ Base = declarative_base()
 # Construct database URL
 DATABASE_URL = settings.DATABASE_URL_POSTGRES
 
-logger.info(f"Database URL: {DATABASE_URL.split('@')[0]}@...")
+
+def _masked_database_url() -> str:
+    """Return a safe representation of the active database URL."""
+
+    try:
+        return engine.url.render_as_string(hide_password=True)
+    except Exception:
+        return str(DATABASE_URL)
 
 # Create engine
 engine = create_engine(
@@ -49,12 +56,18 @@ def init_db():
     # Ensure model modules are imported and registered with Base.metadata
     import app.db.models  # noqa: F401
 
-    # Drop and recreate all tables to ensure schema matches model
-    print("🔄 Dropping old tables to sync with model...")
-    Base.metadata.drop_all(bind=engine)
-    print("🔄 Creating tables from current model...")
+    active_url = _masked_database_url()
+    logger.info(f"Active database URL: {active_url}")
+    print(f"Active database URL: {active_url}")
+
+    if "sqlite" in active_url.lower():
+        logger.warning("SQLite is active; persistent PostgreSQL storage is not in use.")
+        print("⚠ SQLite is active; persistent PostgreSQL storage is not in use.")
+
+    # Create tables if they do not exist; never drop existing data on startup.
+    print("🔄 Ensuring tables exist without dropping existing data...")
     Base.metadata.create_all(bind=engine)
-    print("✅ Database schema synchronized with model")
+    print("✅ Database schema ensured without destructive reset")
     logger.info("Database initialization complete")
 
 

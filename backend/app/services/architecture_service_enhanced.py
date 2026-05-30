@@ -190,15 +190,26 @@ class ArchitectureService:
 
             # Step 7 — Ingest into RAG memory
             print(f"[GENERATE] Step 7: Check RAG ingestion. persisted_run: {persisted_run}")
-            if persisted_run and persisted_run.id:
-                print(f"[GENERATE] Persisted Run Object: {persisted_run}, ID: {persisted_run.id}")
+            def _get_run_id(obj):
+                try:
+                    if obj is None:
+                        return None
+                    if isinstance(obj, dict):
+                        return obj.get("id") or obj.get("run_id")
+                    return getattr(obj, "id", None)
+                except Exception:
+                    return None
+
+            persisted_run_id = _get_run_id(persisted_run)
+            if persisted_run_id:
+                print(f"[GENERATE] Persisted Run Object: {persisted_run}, ID: {persisted_run_id}")
                 try:
                     logger.info("Ingesting architecture into RAG memory...")
                     print("RAG ingestion executing")
 
                     ArchitectureIngestion.ingest_architecture_run(
                         db,
-                        persisted_run.id,
+                        persisted_run_id,
                     )
                     print("Starting RAG ingestion...")
 
@@ -215,16 +226,34 @@ class ArchitectureService:
             print(f"[GENERATE] persisted_run: {persisted_run}")
             
             # If we have a persisted object, use it directly for all fields
-            if persisted_run:
-                print(f"[GENERATE] Using persisted_run object (ID={persisted_run.id})")
-                
-                # Rebuild response using persisted object data
+            if persisted_run_id:
+                print(f"[GENERATE] Using persisted_run object (ID={persisted_run_id})")
+
+                # Try to extract persisted fields safely
+                try:
+                    arch_style = None
+                    confidence_val = None
+                    reasoning_val = ""
+                    if isinstance(persisted_run, dict):
+                        arch_style = persisted_run.get("architecture_style") or persisted_run.get("architecture")
+                        confidence_val = persisted_run.get("confidence")
+                        reasoning_val = persisted_run.get("reasoning", "")
+                    else:
+                        arch_style = getattr(persisted_run, "architecture_style", None) or getattr(persisted_run, "architecture", None)
+                        confidence_val = getattr(persisted_run, "confidence", None)
+                        reasoning_val = getattr(persisted_run, "reasoning", "")
+
+                except Exception:
+                    arch_style = response.get("architecture")
+                    confidence_val = response.get("confidence")
+                    reasoning_val = response.get("reasoning")
+
                 final_response = {
-                    "id": persisted_run.id,
-                    "run_id": persisted_run.id,
-                    "architecture": persisted_run.architecture_style,
-                    "confidence": persisted_run.confidence,
-                    "reasoning": persisted_run.reasoning,
+                    "id": persisted_run_id,
+                    "run_id": persisted_run_id,
+                    "architecture": arch_style or response.get("architecture"),
+                    "confidence": int(confidence_val or response.get("confidence", 0)),
+                    "reasoning": reasoning_val or response.get("reasoning", ""),
                     "services": response.get("services", []),
                     "infrastructure": response.get("infrastructure", []),
                     "retrieval_stats": response.get("retrieval_stats", {}),
