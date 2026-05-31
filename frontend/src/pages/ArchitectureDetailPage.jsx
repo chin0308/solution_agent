@@ -8,6 +8,7 @@ import {
   Database,
   Zap,
   Download,
+  BarChart3,
 } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";;
 import architectureApi from "../services/architectureApi";
@@ -63,8 +64,16 @@ function ArchitectureDetailPage() {
 
   const handleRegenerate = async () => {
     try {
-      await architectureApi.regenerateArchitecture(id);
-      navigate("/history");
+      const regenerated = await architectureApi.regenerateArchitecture(id);
+      const regeneratedId = regenerated.id ?? regenerated.run_id;
+
+      if (regeneratedId || regeneratedId === 0) {
+        navigate(`/architecture/${regeneratedId}`);
+        return;
+      }
+
+      setArchitecture(regenerated);
+      setStatus(regenerated.status || "Draft");
     } catch (err) {
       console.error("Failed to regenerate:", err);
     }
@@ -156,9 +165,9 @@ function ArchitectureDetailPage() {
                 {architecture.requirements && architecture.requirements.length > 120 ? "..." : ""}
               </p>
             </div>
-            <div className={`px-4 py-2 rounded-lg border text-sm font-medium ${statusColors[status]}`}>
-              {status}
-            </div>
+              <div className={`px-4 py-2 rounded-lg border text-sm font-medium ${statusColors[status]}`}>
+                {status}
+              </div>
           </div>
 
           {/* Quick Stats */}
@@ -176,7 +185,7 @@ function ArchitectureDetailPage() {
               </p>
             </div>
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 backdrop-blur-sm">
-              <p className="text-xs text-zinc-400 mb-1">Status</p>
+              <p className="text-xs text-zinc-400 mb-1">Governance Status</p>
               <select
                 value={status}
                 onChange={(e) => handleStatusUpdate(e.target.value)}
@@ -295,6 +304,31 @@ function ArchitectureDetailPage() {
               </div>
             </CollapsibleSection>
           )}
+
+          {/* Retrieved Architectures */}
+          <CollapsibleSection title="Retrieved Similar Architectures" icon={BarChart3}>
+            <div className="space-y-3">
+              {Array.isArray(architecture.retrieved_architectures) && architecture.retrieved_architectures.length > 0 ? (
+                architecture.retrieved_architectures.map((item, idx) => (
+                  <div key={`${item.style || item.name || idx}-${idx}`} className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h5 className="font-semibold text-white">{item.style || item.name || `Architecture ${idx + 1}`}</h5>
+                        <p className="mt-1 text-xs text-zinc-400">
+                          {item.reasoning || item.summary || item.requirements || "No summary available."}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                        {(Number(item.similarity || 0) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-zinc-400">No similar architectures found.</p>
+              )}
+            </div>
+          </CollapsibleSection>
         </div>
 
         {/* Action Buttons */}

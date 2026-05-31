@@ -59,6 +59,7 @@ class ArchitectureResponse(BaseModel):
 	services: List[Dict[str, Any]] = Field(default_factory=list)
 	infrastructure: List[Dict[str, Any]] = Field(default_factory=list)
 	retrieval_stats: Dict[str, Any] = Field(default_factory=dict)
+	retrieved_architectures: List[Dict[str, Any]] = Field(default_factory=list)
 	id: Optional[int] = None
 	run_id: Optional[int] = None
 

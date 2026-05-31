@@ -11,6 +11,31 @@ const client = axios.create({
 
 const architectureApi = {
   /**
+   * Upload and parse a requirement document.
+   */
+  uploadDocument: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await client.post("/api/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("Document upload error:", error);
+      throw new Error(
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to upload document"
+      );
+    }
+  },
+
+  /**
    * Generate architecture recommendation from requirements.
    */
   generateArchitecture: async (requirements) => {
@@ -110,6 +135,7 @@ const architectureApi = {
         total_generated: 0,
         avg_confidence: 0,
         retrieval_count: 0,
+        retrieval_matches: 0,
         status_distribution: { Draft: 0, Approved: 0, Rejected: 0 },
         recent_activity: [],
       };

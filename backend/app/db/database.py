@@ -1,9 +1,10 @@
 """PostgreSQL database connection and session management."""
 
 import logging
+import json
 from typing import Generator
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 
@@ -67,8 +68,30 @@ def init_db():
     # Create tables if they do not exist; never drop existing data on startup.
     print("🔄 Ensuring tables exist without dropping existing data...")
     Base.metadata.create_all(bind=engine)
+
+    _ensure_additive_columns()
+
     print("✅ Database schema ensured without destructive reset")
     logger.info("Database initialization complete")
+
+
+def _ensure_additive_columns():
+    """Add missing non-destructive columns needed by newer code paths."""
+
+    inspector = inspect(engine)
+    existing_columns = {column["name"] for column in inspector.get_columns("architecture_runs")}
+
+    column_sql = {
+        "retrieval_count": "INTEGER DEFAULT 0",
+        "retrieval_source": "VARCHAR DEFAULT 'chromadb'",
+        "retrieved_architectures": "TEXT DEFAULT '[]'",
+    }
+
+    with engine.begin() as connection:
+        for column_name, ddl in column_sql.items():
+            if column_name not in existing_columns:
+                logger.info(f"Adding missing column architecture_runs.{column_name}")
+                connection.execute(text(f"ALTER TABLE architecture_runs ADD COLUMN {column_name} {ddl}"))
 
 
 def get_db() -> Generator[Session, None, None]:

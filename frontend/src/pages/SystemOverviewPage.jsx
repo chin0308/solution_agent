@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader, Database, TrendingUp, Zap, CheckCircle, AlertCircle } from "lucide-react";
+import { Database, TrendingUp, Zap, CheckCircle, AlertCircle } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
 import architectureApi from "../services/architectureApi";
 import { LoadingSpinner, ErrorBanner } from "../components/CommonUI";
@@ -14,25 +14,31 @@ function SystemOverviewPage() {
       try {
         setLoading(true);
         const history = await architectureApi.getHistory(0, 1000);
-        
+
         const totalGenerated = history.length;
-        const totalRetrieval = history.reduce((sum, a) => sum + (a.retrieval_stats?.similar_found || 0), 0);
-        const avgConfidence = history.length > 0
-          ? Math.round(history.reduce((sum, a) => sum + (a.confidence || 0), 0) / history.length)
+        const avgConfidence = totalGenerated > 0
+          ? Math.round(
+              history.reduce((sum, arch) => sum + (Number(arch.confidence) || 0), 0) /
+              totalGenerated
+            )
           : 0;
 
-        const approvedCount = history.filter(a => a.status === "Approved").length;
-        const draftCount = history.filter(a => a.status === "Draft").length;
-        const rejectedCount = history.filter(a => a.status === "Rejected").length;
+        const retrievalHits = history.reduce(
+          (sum, arch) => sum + ((arch.retrieval_stats?.similar_found || 0) > 0 ? 1 : 0),
+          0
+        );
+
+        const approvedCount = history.filter((arch) => arch.status === "Approved").length;
+        const draftCount = history.filter((arch) => arch.status === "Draft").length;
+        const rejectedCount = history.filter((arch) => arch.status === "Rejected").length;
 
         setStats({
           totalGenerated,
-          totalRetrieval,
           avgConfidence,
+          retrievalHits,
           approvedCount,
           draftCount,
           rejectedCount,
-          recentActivity: history.slice(0, 5),
         });
         setError(null);
       } catch (err) {
@@ -95,11 +101,11 @@ function SystemOverviewPage() {
           {/* RAG Retrieval */}
           <div className="rounded-lg border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 p-6 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white">RAG Retrieval</h3>
+              <h3 className="font-semibold text-white">Retrieval Hits</h3>
               <Zap className="size-6 text-emerald-400" />
             </div>
-            <p className="text-4xl font-bold text-emerald-400">{stats.totalRetrieval}</p>
-            <p className="text-xs text-emerald-300 mt-2">similar found</p>
+            <p className="text-4xl font-bold text-emerald-400">{stats.retrievalHits}</p>
+            <p className="text-xs text-emerald-300 mt-2">architectures with matches</p>
           </div>
         </div>
 
@@ -130,35 +136,6 @@ function SystemOverviewPage() {
               <h3 className="font-semibold text-white">Rejected</h3>
             </div>
             <p className="text-3xl font-bold text-red-400">{stats.rejectedCount}</p>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="rounded-lg border border-white/10 bg-gradient-to-br from-white/5 to-white/0 p-6 backdrop-blur-sm">
-          <h2 className="text-xl font-bold text-white mb-4">Recent Activity</h2>
-          <div className="space-y-3">
-            {stats.recentActivity && stats.recentActivity.length > 0 ? (
-              stats.recentActivity.map((arch) => (
-                <div key={arch.id} className="flex items-center justify-between p-3 border border-white/10 rounded-lg hover:bg-white/5 transition">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-white">{arch.architecture_style}</p>
-                    <p className="text-xs text-zinc-500">{arch.created_at}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-cyan-400">{arch.confidence}%</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      arch.status === "Approved" ? "bg-emerald-500/20 text-emerald-300" :
-                      arch.status === "Draft" ? "bg-amber-500/20 text-amber-300" :
-                      "bg-red-500/20 text-red-300"
-                    }`}>
-                      {arch.status}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-zinc-400">No recent activity</p>
-            )}
           </div>
         </div>
       </div>

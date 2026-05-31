@@ -1,9 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Database, Lock, Zap, Package, Network } from "lucide-react";
+import { CheckCircle2, Database, Lock, Zap, Package, Network, BarChart3 } from "lucide-react";
 
 function ArchitectureResult({ architecture }) {
   if (!architecture) return null;
+
+  const architectureType = architecture.architecture_style || architecture.architecture || "Unknown";
 
   return (
     <div className="mt-10 space-y-6">
@@ -13,7 +15,7 @@ function ArchitectureResult({ architecture }) {
           <div>
             <p className="text-sm uppercase tracking-wider text-cyan-300">Recommended Architecture</p>
             <h2 className="mt-2 text-4xl font-bold capitalize text-white">
-              {architecture.architecture_style.replace(/_/g, " ")}
+              {architectureType.replace(/_/g, " ")}
             </h2>
           </div>
           <CheckCircle2 className="size-12 text-cyan-400" />
@@ -25,6 +27,36 @@ function ArchitectureResult({ architecture }) {
         <CardContent className="p-6">
           <h3 className="text-sm uppercase tracking-wide text-zinc-300">Reasoning</h3>
           <p className="mt-3 leading-relaxed text-zinc-200">{architecture.reasoning}</p>
+        </CardContent>
+      </Card>
+
+      {/* Retrieval Matches */}
+      <Card className="border-zinc-800 bg-zinc-900/70">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="size-5 text-emerald-400" />
+            <h3 className="text-sm uppercase tracking-wide text-zinc-300">Retrieved Similar Architectures</h3>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {Array.isArray(architecture.retrieved_architectures) && architecture.retrieved_architectures.length > 0 ? (
+              architecture.retrieved_architectures.map((item, idx) => (
+                <div key={`${item.style || item.name || idx}-${idx}`} className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-white">{item.style || item.name || `Architecture ${idx + 1}`}</p>
+                      <p className="mt-1 text-sm text-zinc-400">{item.reasoning || item.summary || item.requirements || "No summary available."}</p>
+                    </div>
+                    <div className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                      {(Number(item.similarity || 0) * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-zinc-400">No similar architectures found.</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

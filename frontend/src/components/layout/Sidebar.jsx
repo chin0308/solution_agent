@@ -27,7 +27,7 @@ const navSections = [
   {
     title: "Governance",
     items: [
-      { to: "/", icon: CheckCircle2, label: "Status Management", badge: null },
+      { to: "/status-management", icon: CheckCircle2, label: "Status Management", badge: null },
     ],
   },
 ];

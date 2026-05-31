@@ -76,7 +76,7 @@ function ArchitectureCard({ architecture, onClick }) {
                 ✓ Retrieved {architecture.retrieval_stats.similar_found} similar architectures
               </span>
             ) : (
-              <span className="text-zinc-500">No similar architectures in memory</span>
+              <span className="text-zinc-500">No similar architectures found</span>
             )}
           </div>
         )}

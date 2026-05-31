@@ -1,4 +1,4 @@
-import { Sparkles, Database, Zap, TrendingUp } from "lucide-react";
+import { Sparkles, Database, TrendingUp } from "lucide-react";
 
 function SystemStatsCards({ architectures = [] }) {
   const stats = {
@@ -8,10 +8,9 @@ function SystemStatsCards({ architectures = [] }) {
         ? Math.round(architectures.reduce((sum, a) => sum + (a.confidence || 0), 0) / architectures.length)
         : 0,
     retrievalHits: architectures.reduce(
-      (sum, a) => sum + (a.retrieval_stats?.similar_found || 0),
+      (sum, a) => sum + ((a.retrieval_stats?.similar_found || 0) > 0 ? 1 : 0),
       0
     ),
-    recentCount: architectures.slice(0, 5).length,
   };
 
   const statCards = [
@@ -33,16 +32,10 @@ function SystemStatsCards({ architectures = [] }) {
       icon: TrendingUp,
       color: "emerald",
     },
-    {
-      label: "Recent",
-      value: stats.recentCount,
-      icon: Zap,
-      color: "amber",
-    },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {statCards.map((stat, idx) => {
         const Icon = stat.icon;
         const colorClasses = {

@@ -30,24 +30,57 @@ function UploadPage() {
     setError(null);
   }
 
+  async function buildGenerationContext() {
+    const manualRequirements = requirements.trim();
+
+    if (!uploadedFiles.length && !manualRequirements) {
+      throw new Error("Upload a document, enter requirements, or use both.");
+    }
+
+    const sections = [];
+
+    if (uploadedFiles.length > 0) {
+      const uploadedDocuments = await Promise.all(
+        uploadedFiles.map(async (file) => architectureApi.uploadDocument(file))
+      );
+
+      const uploadedText = uploadedDocuments
+        .map((document, index) => {
+          const name = document.filename || uploadedFiles[index]?.name || `Document ${index + 1}`;
+          return `Document: ${name}\n${document.extracted_text}`;
+        })
+        .join("\n\n---\n\n");
+
+      if (uploadedText.trim()) {
+        sections.push(`Uploaded Requirement Context:\n${uploadedText}`);
+      }
+    }
+
+    if (manualRequirements) {
+      sections.push(`Manual Requirements:\n${manualRequirements}`);
+    }
+
+    return sections.join("\n\n");
+  }
+
   async function handleGenerate() {
     setError(null);
     setIsGenerating(true);
 
     try {
-      if (!requirements.trim()) {
-        throw new Error("Please enter requirements");
-      }
+      const generationContext = await buildGenerationContext();
 
       // Call FastAPI backend
-      const response = await architectureApi.generateArchitecture(requirements);
+      const response = await architectureApi.generateArchitecture(generationContext);
+
+      setResult(response);
 
       // Extract ID from response (backend should return it)
       // Use ?? (nullish coalescing) instead of || to handle 0 as a valid ID
       const architectureId = response.id ?? response.run_id;
       
       if (!architectureId && architectureId !== 0) {
-        throw new Error("Architecture generated but could not retrieve ID");
+        return;
       }
 
       // Navigate to detail page to view the generated architecture
@@ -67,7 +100,7 @@ function UploadPage() {
         <h1 className="text-4xl font-bold text-white">AI Architecture Workspace</h1>
 
         <p className="mt-2 text-zinc-400">
-          Paste your requirements or upload documents to generate architecture recommendations
+          Upload a document, enter requirements, or use both for richer context.
         </p>
       </div>
 
@@ -100,7 +133,7 @@ function UploadPage() {
       )}
 
       {/* Results Display */}
-      {result && !isGenerating && (
+      {result && !isGenerating && !result.id && (
         <>
           <ArchitectureResult architecture={result} />
           <div className="mt-8 flex justify-center">
@@ -140,6 +173,7 @@ function UploadPage() {
             value={requirements}
             onChange={(event) => setRequirements(event.target.value)}
             disabled={isGenerating}
+            placeholder="Enter requirements manually, or combine them with uploaded documents for richer context..."
           />
 
           <UploadActions

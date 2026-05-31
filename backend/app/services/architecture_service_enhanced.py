@@ -94,6 +94,7 @@ class ArchitectureService:
                     retrieval_results
                 )
             )
+            retrieved_architectures = retrieval_results.get("results", []) or []
 
             logger.info(
                 f"Retrieved {retrieval_results.get('retrieval_count', 0)} similar architectures"
@@ -141,6 +142,7 @@ class ArchitectureService:
                     ),
                     "retrieval_source": retrieval_source,
                 },
+                "retrieved_architectures": retrieved_architectures,
                 "id": None,
                 "run_id": None,
             }
@@ -164,6 +166,9 @@ class ArchitectureService:
                         architecture,
                         response.get("services", []),
                         response.get("infrastructure", []),
+                        retrieval_results.get("retrieval_count", 0),
+                        retrieval_source,
+                        retrieved_architectures,
                     )
                 )
                 
@@ -257,6 +262,7 @@ class ArchitectureService:
                     "services": response.get("services", []),
                     "infrastructure": response.get("infrastructure", []),
                     "retrieval_stats": response.get("retrieval_stats", {}),
+                    "retrieved_architectures": retrieved_architectures,
                 }
                 
                 print(f"[GENERATE] Final response with ID: {final_response['id']}")
@@ -350,6 +356,9 @@ class ArchitectureService:
         architecture: Dict[str, Any],
         services: list,
         infrastructure: list,
+        retrieval_count: int = 0,
+        retrieval_source: str = "chromadb",
+        retrieved_architectures: Optional[list] = None,
     ):
         """Persist architecture to PostgreSQL."""
 
@@ -363,6 +372,9 @@ class ArchitectureService:
                 architecture,
                 services,
                 infrastructure,
+                retrieval_count=retrieval_count,
+                retrieval_source=retrieval_source,
+                retrieved_architectures=retrieved_architectures,
             )
 
             print(f"[PERSIST] After CRUD save - run: {run}")
@@ -436,6 +448,7 @@ class ArchitectureService:
                 "similar_found": 0,
                 "retrieval_source": "fallback",
             },
+            "retrieved_architectures": [],
             "id": None,
             "run_id": None,
         }
@@ -469,9 +482,10 @@ class ArchitectureService:
                     "confidence": run.confidence,
                     "created_at": run.created_at.isoformat() if run.created_at else None,
                     "status": getattr(run, "status", "Draft"),
+                    "retrieved_architectures": _safe_parse_json_list(getattr(run, "retrieved_architectures", "[]")) or [],
                     "retrieval_stats": {
-                        "similar_found": 0,
-                        "retrieval_source": "chromadb",
+                        "similar_found": getattr(run, "retrieval_count", 0) or 0,
+                        "retrieval_source": getattr(run, "retrieval_source", "chromadb") or "chromadb",
                     },
                 }
                 for run in runs
@@ -528,9 +542,10 @@ class ArchitectureService:
                     for i in run.infrastructure
                 ],
                 "retrieval_stats": {
-                    "similar_found": 0,
-                    "retrieval_source": "chromadb",
+                    "similar_found": getattr(run, "retrieval_count", 0) or 0,
+                    "retrieval_source": getattr(run, "retrieval_source", "chromadb") or "chromadb",
                 },
+                "retrieved_architectures": _safe_parse_json_list(getattr(run, "retrieved_architectures", "[]")) or [],
             }
 
         except Exception as e:
@@ -556,14 +571,14 @@ class ArchitectureService:
             draft = db.query(ArchitectureRun).filter(ArchitectureRun.status == "Draft").count()
             rejected = db.query(ArchitectureRun).filter(ArchitectureRun.status == "Rejected").count()
             
-            total_retrieval = sum(
-                max(0, 3) for _ in runs  # Default to 3 similar architectures per run
-            )
+            total_retrieval_hits = sum(1 for r in runs if (getattr(r, "retrieval_count", 0) or 0) > 0)
+            total_similar_found = sum(int(getattr(r, "retrieval_count", 0) or 0) for r in runs)
             
             return {
                 "total_generated": total,
                 "avg_confidence": avg_confidence,
-                "retrieval_count": total_retrieval,
+                "retrieval_count": total_retrieval_hits,
+                "retrieval_matches": total_similar_found,
                 "status_distribution": {
                     "Draft": draft,
                     "Approved": approved,
@@ -573,7 +588,12 @@ class ArchitectureService:
                     {
                         "id": r.id,
                         "architecture": r.architecture_style,
+                        "architecture_style": r.architecture_style,
                         "created_at": r.created_at.isoformat() if r.created_at else None,
+                        "retrieval_stats": {
+                            "similar_found": getattr(r, "retrieval_count", 0) or 0,
+                            "retrieval_source": getattr(r, "retrieval_source", "chromadb") or "chromadb",
+                        },
                     }
                     for r in sorted(runs, key=lambda r: r.created_at or "", reverse=True)[:5]
                 ],
@@ -584,6 +604,7 @@ class ArchitectureService:
                 "total_generated": 0,
                 "avg_confidence": 0,
                 "retrieval_count": 0,
+                "retrieval_matches": 0,
                 "status_distribution": {"Draft": 0, "Approved": 0, "Rejected": 0},
                 "recent_activity": [],
             }

@@ -27,6 +27,9 @@ class ArchitectureCRUD:
         architecture: Dict[str, Any],
         services: List[Dict[str, Any]],
         infrastructure: List[Dict[str, Any]],
+        retrieval_count: int = 0,
+        retrieval_source: str = "chromadb",
+        retrieved_architectures: Optional[List[Dict[str, Any]]] = None,
     ) -> ArchitectureRun:
         """Save a complete architecture run to database.
 
@@ -52,6 +55,9 @@ class ArchitectureCRUD:
                 architecture_style=architecture.get("style", "Unknown"),
                 confidence=int(architecture.get("confidence", 80)),
                 reasoning=architecture.get("reasoning", ""),
+                retrieval_count=max(0, int(retrieval_count or 0)),
+                retrieval_source=retrieval_source or "chromadb",
+                retrieved_architectures=json.dumps(retrieved_architectures or []),
             )
             
             print(f"[CRUD] Created ArchitectureRun object: {run}")
@@ -158,7 +164,13 @@ class ArchitectureCRUD:
         Returns:
             List of ArchitectureRun objects
         """
-        return db.query(ArchitectureRun).offset(skip).limit(limit).all()
+        return (
+            db.query(ArchitectureRun)
+            .order_by(ArchitectureRun.created_at.desc(), ArchitectureRun.id.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     @staticmethod
     def search_architecture_runs(

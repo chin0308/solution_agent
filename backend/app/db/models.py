@@ -50,6 +50,21 @@ class ArchitectureRun(Base):
         back_populates="architecture_run"
     )
 
+    retrieval_count = Column(
+        Integer,
+        default=0,
+    )
+
+    retrieval_source = Column(
+        String,
+        default="chromadb",
+    )
+
+    retrieved_architectures = Column(
+        Text,
+        default="[]",
+    )
+
 
 class Service(Base):
 

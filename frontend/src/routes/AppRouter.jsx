@@ -6,6 +6,7 @@ import ArchitectureHistoryPage from "../pages/ArchitectureHistoryPage";
 import ArchitectureDetailPage from "../pages/ArchitectureDetailPage";
 import ArchitectureComparisonPage from "../pages/ArchitectureComparisonPage";
 import SystemOverviewPage from "../pages/SystemOverviewPage";
+import StatusManagementPage from "../pages/StatusManagementPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
 function AppRouter() {
@@ -18,6 +19,7 @@ function AppRouter() {
         <Route path="/architecture/:id" element={<ArchitectureDetailPage />} />
         <Route path="/architecture/:id/compare" element={<ArchitectureComparisonPage />} />
         <Route path="/system-overview" element={<SystemOverviewPage />} />
+        <Route path="/status-management" element={<StatusManagementPage />} />
         <Route path="/*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

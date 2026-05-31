@@ -5,6 +5,7 @@ import AppLayout from "../../components/layout/AppLayout";
 import RequirementTextarea from "../../components/upload/RequirementTextarea";
 import architectureApi from "../../services/architectureApi";
 import ArchitectureCard from "../../components/ArchitectureCard";
+import ArchitectureResult from "../../components/architecture/ArchitectureResult";
 import SystemStatsCards from "../../components/SystemStatsCards";
 
 function DashboardPage() {
@@ -14,13 +15,14 @@ function DashboardPage() {
   const [error, setError] = useState(null);
   const [recentArchitectures, setRecentArchitectures] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [result, setResult] = useState(null);
 
   // Load recent architectures on mount
   useEffect(() => {
     const loadRecent = async () => {
       try {
         setLoadingHistory(true);
-        const data = await architectureApi.getHistory(0, 10);
+        const data = await architectureApi.getHistory(0, 1000);
         setRecentArchitectures(data);
       } catch (err) {
         console.error("Failed to load recent architectures:", err);
@@ -51,14 +53,7 @@ function DashboardPage() {
       const architectureId = result.id ?? result.run_id;
       
       if (!architectureId && architectureId !== 0) {
-        // Fallback: fetch latest architecture if no ID in response
-        const history = await architectureApi.getHistory(0, 1);
-        if (history.length > 0) {
-          const fallbackId = history[0].id ?? history[0].run_id;
-          navigate(`/architecture/${fallbackId}`);
-        } else {
-          setError("Architecture generated but could not retrieve ID");
-        }
+        setResult(result);
       } else {
         // Navigate directly to detail page with the generated architecture ID
         navigate(`/architecture/${architectureId}`);
@@ -113,6 +108,12 @@ function DashboardPage() {
           {error && (
             <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
               {error}
+            </div>
+          )}
+
+          {result && !isGenerating && !result.id && (
+            <div className="mt-8">
+              <ArchitectureResult architecture={result} />
             </div>
           )}
 
